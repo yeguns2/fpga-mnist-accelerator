@@ -2,7 +2,7 @@
 
 # Urbana FPGA MNIST Accelerator
 
-This project demonstrates a full end-to-end **MNIST inference system on the Urbana FPGA board**, combining a custom RTL accelerator, MicroBlaze firmware, and a browser-based front end. A user can draw a digit in the web UI, send it to the FPGA over UART, and receive a real-time prediction along with detailed performance benchmarks. **we achieved a 3339x speedup**, reducing latency from ~454ms to **0.136ms**.
+This project demonstrates a full end-to-end **MNIST inference system on the Urbana FPGA board**, combining a custom RTL accelerator, MicroBlaze firmware, and a browser-based front end. A user can draw a digit in the web UI, send it to the FPGA over UART, and receive a real-time prediction along with detailed performance benchmarks. **Achieved a 3339x speedup**, reducing latency from ~454ms to **0.136ms**.
 
 Beyond the demo itself, this project was designed as a learning-focused hardware/software co-design exercise. Instead of treating deep learning inference as a black box, the CNN pipeline was implemented and verified step by step from training and quantization to RTL execution and cycle-accurate benchmarking.
 
