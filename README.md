@@ -1,4 +1,4 @@
-![MNIST FPGA Demo](mnist_demo.gif)
+![MNIST FPGA Demo](docs/mnist_demo.gif)
 
 # Urbana FPGA MNIST Accelerator Demo
 
@@ -113,7 +113,7 @@ This means the reported hardware cycles represent **compute-only performance**, 
 
 The accelerator runs at a **confirmed 100 MHz clock**.
 
-For comparison, a software reference implementation runs on the same MicroBlaze processor, and its execution time is measured using an **AXI timer**. This provides a clean apples-to-apples comparison: same algorithm, same data, same platform—hardware datapath versus software execution.
+For comparison, a software reference implementation runs on the same MicroBlaze processor, and its execution time is measured using an **AXI timer**. This provides a clean comparison: same algorithm, same data, same platform—hardware datapath versus software execution.
 
 ---
 
