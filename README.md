@@ -198,7 +198,7 @@ At a high level, the system consists of:
     ├── mnist_train.py
     ├── export_weight.py
     └── mnist_smallcnn_state_dict.pt
-
+```
 ---
 
 ## Debug and Verification Support
