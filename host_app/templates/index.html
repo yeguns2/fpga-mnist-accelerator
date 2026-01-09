@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPGA MNIST Demo</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 { margin-bottom: 20px; text-shadow: 0 0 10px #00ff41; }
+        .container { display: flex; gap: 40px; align-items: flex-start; }
+        
+        /* Canvas Styling */
+        .canvas-wrapper { text-align: center; }
+        canvas {
+            border: 2px solid #333;
+            background-color: #000; /* MNIST standard background */
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+            cursor: crosshair;
+        }
+        
+        /* Result Display Styling */
+        .result-box {
+            width: 260px;
+            padding: 20px;
+            border: 2px solid #333;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .pred-title { font-size: 1.2rem; color: #888; margin-bottom: 10px; }
+        .pred-val { font-size: 6rem; font-weight: bold; margin: 0; color: #fff; text-shadow: 0 0 20px #00ff41; }
+        .stats { width: 100%; margin-top: 20px; font-size: 0.85rem; color: #aaa; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .highlight { color: #00ff41; font-weight: bold; }
+        .highlight-blue { color: #00bfff; font-weight: bold; }
+
+        /* Button Styling */
+        .btn-group { margin-top: 20px; display: flex; gap: 15px; }
+        button {
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-family: inherit;
+            font-weight: bold;
+            background: transparent;
+            color: #00ff41;
+            border: 1px solid #00ff41;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover { background: #00ff41; color: #000; box-shadow: 0 0 15px #00ff41; }
+    </style>
+</head>
+<body>
+
+    <h1>URBANA FPGA AI DEMO</h1>
+
+    <div class="container">
+        <div class="canvas-wrapper">
+            <canvas id="myCanvas" width="280" height="280"></canvas>
+            <p style="color:#555; font-size:0.8rem;">Draw a digit (0-9)</p>
+        </div>
+
+        <div class="result-box">
+            <div class="pred-title">PREDICTION</div>
+            <div class="pred-val" id="prediction">?</div>
+            
+            <div class="stats">
+                <div class="stat-row"><span>HW Cycles:</span> <span id="hw_cycles" class="highlight">0</span></div>
+                <div class="stat-row"><span>SW Cycles:</span> <span id="sw_cycles" class="highlight">0</span></div>
+                <div class="stat-row"><span>HW Time:</span> <span id="fpga_time" class="highlight">0s</span></div>
+                <hr style="border-color:#333; margin:10px 0;">
+                <div class="stat-row"><span>Speedup:</span> <span id="speedup" class="highlight-blue">0x</span></div>
+                <div class="stat-row"><span>Confidence:</span> <span id="confidence" class="highlight">0%</span></div>
+                <div class="stat-row" style="margin-top: 10px;"><span id="status">Ready</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button onclick="clearCanvas()">CLEAR</button>
+        <button onclick="sendReq()">INFERENCE</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+
+        // Initialize Canvas: Black background, White stroke
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 18; 
+        ctx.lineCap = "round";
+
+        // Event Listeners
+        canvas.addEventListener('mousedown', startDrawing); 
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);    
+        canvas.addEventListener('mouseout', stopDrawing);   
+
+        function startDrawing(e) {
+            isDrawing = true;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            ctx.beginPath(); 
+            ctx.moveTo(x, y);
+            draw(e); 
+        }
+
+        // End current path
+        function stopDrawing() {
+            isDrawing = false;
+            ctx.beginPath(); 
+        }
+
+        // Draw segment
+        function draw(e) {
+            if(!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            ctx.lineTo(x, y); 
+            ctx.stroke();     
+            
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        // Clear canvas and reset UI
+        function clearCanvas() {
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath(); 
+            document.getElementById('prediction').innerText = "?";
+            document.getElementById('hw_cycles').innerText = "0";
+            document.getElementById('sw_cycles').innerText = "0";
+            document.getElementById('fpga_time').innerText = "0s";
+            document.getElementById('speedup').innerText = "0x";
+            document.getElementById('confidence').innerText = "0%";
+            document.getElementById('status').innerText = "Ready";
+        }
+
+        // Send image data to server
+        function sendReq() {
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = "Processing...";
+            
+            canvas.toBlob((blob) => {
+                const formData = new FormData();
+                formData.append('image', blob, 'digit.png');
+
+                fetch('/predict', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.error) {
+                        statusEl.innerText = "Error!";
+                        alert(data.error);
+                    } else {
+                        document.getElementById('prediction').innerText = data.prediction;
+                        document.getElementById('hw_cycles').innerText = data.hw_cycles;
+                        document.getElementById('sw_cycles').innerText = data.sw_cycles;
+                        document.getElementById('fpga_time').innerText = data.fpga_time;
+                        document.getElementById('speedup').innerText = data.speedup;
+                        document.getElementById('confidence').innerText = data.confidence;
+                        statusEl.innerText = "Done";
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    statusEl.innerText = "Comm Error";
+                });
+            });
+        }
+    </script>
+</body>
+</html>
