@@ -1,6 +1,6 @@
 ![MNIST FPGA Demo](docs/mnist_demo.gif)
 
-# Urbana FPGA MNIST Accelerator
+# Urbana FPGA MNIST Accelerator: 3339x Speedup Demo
 
 This project demonstrates a full end-to-end **MNIST inference system on the Urbana FPGA board**, combining a custom RTL accelerator, MicroBlaze firmware, and a browser-based front end. A user can draw a digit in the web UI, send it to the FPGA over UART, and receive a real-time prediction along with detailed performance benchmarks. **Achieved a 3339x speedup**, reducing latency from ~454ms to **0.136ms**.
 
